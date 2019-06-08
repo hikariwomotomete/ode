@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 from scipy.optimize import minimize 
 
 #path to .csv files containing processed data 
-WTpath =r'C:\Users\delbe\Downloads\wut\wut\FALL_2018\Post_grad\accili\2018\lab\digitize\kim2012\new csv\WT\milliseconds'
-FApath =r'C:/Users/delbe/Downloads/wut/wut/FALL_2018/Post_grad/accili/2018/lab/digitize/kim2012/new csv/FA/milliesconds'
+WTpath =r'C:\Users\delbe\Downloads\wut\wut\Post_grad\UBC\Research\lab\digitize\kim2012\new csv\WT\milliseconds'
+FApath =r'C:\Users\delbe\Downloads\wut\wut\Post_grad\UBC\Research\lab\digitize\kim2012\new csv\FA\milliesconds'
 path = FApath #specify which files to use, FA or WT in this case 
 
 #separate activation and deactivation files into respective lists 
@@ -87,11 +87,17 @@ dfMerge_WT = df_merger('WT')
 
 def db_pars(params, db): 
     if db == True: 
-        a0, sa, b0, sb, sc, d0, sd, g1, h1, g2, h2 = params
-        new_c0 = (a0*g1*d0*h2)/(b0*h1*g2)
-        new = [a0, sa, b0, sb, new_c0, sc, d0, sd, g1, h1, g2, h2]
+        a0, sa, b0, sb, d0, sd, g1, h1, g2, h2 = params
         
-        return new 
+        new_c0 = (a0*g1*d0*h2)/(b0*h1*g2)
+        new_sc = new_sc = 1/( (1/sa) + (1/sb) - (1/sd) )
+        new = [a0, sa, b0, sb, new_c0, new_sc, d0, sd, g1, h1, g2, h2]
+        
+        #print('c0', new_c0) 
+        #print('sc', new_sc) 
+        
+        return new
+        
     else:
         return params 
 
@@ -284,7 +290,7 @@ def plotter(data_df, sim_df, faorwt):
     ax1_l2 = ax1.plot(act_sim, linewidth = 4, ls='--') 
     
     #activation legend 
-    sim_act_leg = ax1.legend(ax1_l2, volts[0:8], bbox_to_anchor=(1.08, 1), loc=1, borderaxespad=0.)
+    sim_act_leg = ax1.legend(ax1_l2, volts[0:8], bbox_to_anchor=(1.08, 1), loc=1, borderaxespad=0., fontsize=12)
     ax1_leg = ax1.add_artist(sim_act_leg) 
     
     #separate deactivation plots 
@@ -292,15 +298,15 @@ def plotter(data_df, sim_df, faorwt):
         f2, axs = plt.subplots(nrows = 1, ncols = 3, sharex = True, sharey = True) 
         axs[0].scatter(xval2.iloc[:, 0], yval2.iloc[:, 0], c='k')
         axs[0].plot(de_sim.iloc[:, 0], linewidth=3)
-        axs[0].set_title('-20mV')
+        axs[0].set_title('-20mV', fontsize=16)
         
         axs[1].scatter(xval2.iloc[:, 1], yval2.iloc[:, 1], c='k')
         axs[1].plot(de_sim.iloc[:, 1], linewidth=3)
-        axs[1].set_title('0mV')
+        axs[1].set_title('0mV', fontsize=16)
         
         axs[2].scatter(xval2.iloc[:, 2], yval2.iloc[:, 2], c='k', label='Data')
         axs[2].plot(de_sim.iloc[:, 2], linewidth=3, label='Model')
-        axs[2].set_title('+20mV')
+        axs[2].set_title('+20mV', fontsize=16)
         
         #deactivation legend 
         axs[2].legend(bbox_to_anchor=(1.22, 1), loc=1, fontsize=16)
@@ -317,7 +323,14 @@ def plotter(data_df, sim_df, faorwt):
         #deactivation legend 
         axs[1].legend(bbox_to_anchor=(1.22, 1), loc=1, fontsize=16)
         
-    f2.suptitle("%s deactivation (%s)" % (faorwt, par_label), y=0.98)
+    axs[0].set_ylabel('Normalized Open Fraction', fontsize=16, fontweight='bold') 
+    
+    #create common x label 
+    ax_big = f2.add_subplot(111, frameon=False)
+    ax_big.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
+    ax_big.set_xlabel('Time (ms)', fontsize=16, fontweight='bold') 
+    
+    f2.suptitle("%s deactivation (%s)" % (faorwt, par_label), y=0.98, fontsize=18, fontweight='bold')
     
     '''#make big subplot for whole axes labels 
     ax_de2 = f2.add_subplot(111, zorder=3)
@@ -334,34 +347,58 @@ def plotter(data_df, sim_df, faorwt):
     
     #deactivation 
     ax2 = f_de1.add_subplot(111) 
-    
-    for i in range(k): 
-        ax2.plot(de_sim.iloc[:, i], ls='--', c=clrs[i], linewidth=2, label=volts[8+i]) 
-        ax2.plot(xval2.iloc[:, i], yval2.iloc[:, i], linewidth=2, c=clrs[i])
-        plt.legend() 
-    
-    ax2.set_xlabel('Time (ms)', fontsize=18)
-    ax1.set_xlabel('Time (ms)', fontsize=18)
-    ax2.set_ylabel('Normalized Open Fraction', fontsize=18) 
-    ax1.set_ylabel('Normalized Open Fraction', fontsize=18) 
-    
-    ax1.set_title('%s activation (%s)' % (faorwt, par_label), fontsize=22, y=1.02)
-    ax2.set_title('%s deactivation (%s)' % (faorwt, par_label), fontsize=22, y=1.02)
 
-pars_FA = [0.011565495, 11.8827173, 772.477305, 59.5362467, 7.58655751788942e-05, 7.22673947, 0.007, 66.4662684, 0.00156868968, 8.80185239e-05, 6.55974192e-06, 0.000266435453]
-pars_WT = [0.0634301786, 12.9293755, 1799.99977, 94.9982597, 0.000135395346, 10.473462, 0.00699934753, 37.996743, 0.00287905103, 2.24788874e-05, 2.27056799e-05, 0.0150489481]
+    l_sim = ax2.plot(de_sim.iloc[:, range(k)], ls='--', linewidth=2) 
+    l_data = ax2.plot(xval2.iloc[:, range(k)], yval2.iloc[:, range(k)], linewidth=2)
+    
+    for p in [l_sim, l_data]:
+        for line in p: 
+            n = int( p.index( line ) )
+            line.set_color( clrs[n] )  
+    
+    #deactivation legend 
+    sim_de_leg = ax2.legend(l_sim, volts[8:12], bbox_to_anchor=(1.08, 1), loc=1, borderaxespad=0., fontsize=12) 
+    ax2_leg = ax2.add_artist(sim_de_leg) 
+    
+    ax2.set_xlabel('Time (ms)', fontsize=16, fontweight='bold')
+    ax1.set_xlabel('Time (ms)', fontsize=16, fontweight='bold')
+    ax2.set_ylabel('Normalized Open Fraction', fontsize=16, fontweight='bold') 
+    ax1.set_ylabel('Normalized Open Fraction', fontsize=16, fontweight='bold') 
+    
+    ax1.set_title('%s activation (%s)' % (faorwt, par_label), y=1.02, fontsize=18, fontweight='bold')
+    ax2.set_title('%s deactivation (%s)' % (faorwt, par_label), y=1.02, fontsize=18, fontweight='bold')
 
-db = False
+'''pars_FA = [2.80923471e-02, 1.24320627e+01, 1.69887433e+03, 5.26915979e+01,
+       1.03830677e-02, 7.51102343e+00, 8.20904121e-01, 4.10800323e+01,
+       1.62092700e-03, 8.75707038e-05, 6.02985683e-06, 2.37048546e-04]
+pars_WT = [0.0634301786, 12.9293755, 1799.99977, 94.9982597, 0.000135395346, 10.473462, 0.00699934753, 37.996743, 0.00287905103, 2.24788874e-05, 2.27056799e-05, 0.0150489481] '''
+
+#new db 
+pars_FA = [1.24063886e-01, 1.50000000e+01, 1.55568501e+03, 7.64678684e+01,
+       7.00000000e-05, 3.47754083e+01, 2.05565642e-03, 1.48228153e-04,
+       8.90728612e-03, 5.07029575e-01]
+       
+pars_WT = [1.66883163e-03, 8.12681740e+00, 1.76662403e+03, 5.40137039e+01,
+       8.72393000e-03, 2.10457589e+01, 1.16226019e-03, 6.94138987e-05,
+       4.80226109e-05, 9.59073193e-03]
+       
+db = True
 if db == True: 
-    par_label = 'with db'
+    par_label = 'with detail balance'
 else: 
     par_label = 'no db'
     
 dss_WT = fullon_sim(pars_WT, db, 'WT') 
 dss_FA = fullon_sim(pars_FA, db, 'FA') 
 
+#dss_WT.to_excel('wt_nodb.xlsx')
+#dss_FA.to_excel('fa_nodb.xlsx') 
+
 plotter(dfMerge_WT, dss_WT, 'WT') 
 plotter(dfMerge_FA, dss_FA, 'FA') 
+
+#dfMerge_WT.to_excel('wt_data.xlsx') 
+#dfMerge_FA.to_excel('fa_data.xlsx')
 
 plt.show() 
 
